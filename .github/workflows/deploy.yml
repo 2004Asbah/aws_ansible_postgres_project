@@ -41,5 +41,8 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           export AWS_DEFAULT_REGION="eu-north-1"
           export ANSIBLE_HOST_KEY_CHECKING=False
+
+              
+          terraform output
           export SERVER_IP=$(terraform output -raw server_public_ip)
           ansible-playbook -i $SERVER_IP, setup_db.yml --private-key ~/.ssh/asbah_key -u ec2-user
