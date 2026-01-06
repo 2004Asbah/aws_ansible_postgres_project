@@ -1,0 +1,46 @@
+---
+- name: Production Database Setup
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install Postgres
+      dnf: { name: postgresql-server, state: present }
+
+    - name: Initialize DB
+      command: postgresql-setup --initdb
+      args: { creates: /var/lib/pgsql/data/PG_VERSION }
+
+    - name: Hardening - Listen on all IPs
+      lineinfile:
+        path: /var/lib/pgsql/data/postgresql.conf
+        regexp: "^#?listen_addresses ="
+        line: "listen_addresses = '*'"
+
+    - name: Hardening - Allow Remote Connections
+      lineinfile:
+        path: /var/lib/pgsql/data/pg_hba.conf
+        line: "host all all 0.0.0.0/0 md5"
+
+    - name: Start Postgres
+      service: { name: postgresql, state: started, enabled: yes }
+
+    - name: Install Monitoring Agent (Node Exporter)
+      unarchive:
+        src: https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz
+        dest: /usr/local/bin
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+
+    - name: Create Monitoring Service
+      copy:
+        dest: /etc/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node Exporter
+          [Service]
+          ExecStart=/usr/local/bin/node_exporter
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start Monitoring
+      systemd: { name: node_exporter, state: started, enabled: yes, daemon_reload: yes }
