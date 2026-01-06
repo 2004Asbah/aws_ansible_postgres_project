@@ -64,9 +64,14 @@ resource "aws_instance" "asbah_db_server_v2" {
   key_name      = aws_key_pair.asbah_key_v2.key_name
   vpc_security_group_ids = [aws_security_group.db_sg_v2.id]
 
+root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+  }
   tags = {
     Name = "Asbah-Postgres-Production"
   }
+
 }
 
 # 5. Output for Ansible
