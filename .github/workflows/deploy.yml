@@ -1,0 +1,40 @@
+name: "DevOps Pipeline: Terraform & Ansible"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/asbah_key
+          chmod 600 ~/.ssh/asbah_key
+
+      - name: Run Ansible Playbook
+        run: |
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          export SERVER_IP=$(terraform output -raw server_public_ip)
+          ansible-playbook -i $SERVER_IP, setup_db.yml --private-key ~/.ssh/asbah_key -u ec2-user

@@ -1,3 +1,14 @@
+
+terraform {
+  backend "s3" {
+    bucket         = "asbah-terraform-state-2026" # Must match bucket name above
+    key            = "dev/postgres/terraform.tfstate"
+    region         = "eu-north-1"
+    encrypt        = true
+  }
+}
+
+
 provider "aws" {
   region = "eu-north-1"
 }
