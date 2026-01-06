@@ -27,7 +27,9 @@ data "aws_ami" "rhel_9" {
 # 2. Upload your SSH Public Key (V2 to avoid "Already Exists" error)
 resource "aws_key_pair" "asbah_key_v2" {
   key_name   = "asbah-key-v2"
-  public_key = file("/home/cloudshell-user/.ssh/asbah_key.pub")
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDEdiKyLvuZYj3vCwWktnwvwQiNch0k+dN/5L4JP1aVCTInT0SZykJd1quT64vz7Mj+wqYas+X93j/JEZWNKvqW+wd5zpK3F7NZe6JOe5B/BOvM185DJls6JJt2EQIJuXPiDa2wlVQfy2UaK3rhmTdEJ9I0XaPYAlpP2NN62cN/nNqzo0DCkKAiaocL5lCBav/1oyoQAEBYhF7SILvngl1dhzSp4lqbLFwCcRwpRd8i1uJu/Bhx2hTwvXemFHFRNAXal3+z2op821Sb8M0MLXrShcUHLgxWvemgOX8YHmPNQXYSeJzsST8xk8JMntpgaQJtBeet54SfajuePmWk/4TpiUpCUw5i+TrO9WTLwjbB2heSgxAa4QPgWOXKdkOvJRFEfYKc/ej7BLvRjUXfbhWpKLFoFTu5uJ0AWi0gdp/lsA5WKEFW0TkFld3lJibsxAwy5IpjKEI0tVFNzWfwj7IYoOhFi8gcXbfsHWvG1y9Exv2JxzicRBBuT5a9glflAkcMPDMqcMHz763LePlXGzkVLAEZ/mLRyjFc9ljuPr4osFDjLnQgl8bbJSiSoP73ENVHLum+L7sb+ZwWQJfxIRWAPvCE0oGAaXno/irlQhekkgo1l6PwPAia3C6uyjNOkO3l3MKcGz8OrBmdQX1KpPzUgDIKqP0uDtKAmqsLPY4V3Q== cloudshell-user@ip-10-133-34-43.eu-north-1.compute.internal"
+
+
 }
 
 # 3. Security Group with Monitoring & DB Ports
