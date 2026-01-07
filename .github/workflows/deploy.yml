@@ -35,11 +35,24 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/asbah_key
           chmod 600 ~/.ssh/asbah_key
 
+      - name: Configure AWS Credentials (for Terraform output)
+        run: |
+          mkdir -p ~/.aws
+
+          cat <<EOF > ~/.aws/credentials
+          [default]
+          aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          EOF
+
+          cat <<EOF > ~/.aws/config
+          [default]
+          region = eu-north-1
+          EOF
+
       - name: Run Ansible Playbook
         run: |   
-          export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-          export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          export AWS_DEFAULT_REGION="eu-north-1"
+          
           export ANSIBLE_HOST_KEY_CHECKING=False
 
               
