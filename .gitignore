@@ -1,0 +1,18 @@
+# Terraform local files
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Credentials and Keys
+*.pem
+*.pub
+asbah_key
+asbah_key.pub
+.aws/
+credentials
+
+# Python & OS
+__pycache__/
+.env
+.DS_Store
