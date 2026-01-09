@@ -1,40 +1,43 @@
-name: DevOps Pipeline
+name: "DevOps Pipeline: Terraform & Ansible"
 
 on:
   push:
     branches:
       - main
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Debug Token
-        run: |
-          echo "OIDC URL: $ACTIONS_ID_TOKEN_REQUEST_URL"
-          curl -s -D - \
-            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL" | head -n 20
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::981417395766:role/github-actions-oidc-role
-          aws-region: eu-north-1
-          aws-sts-regional-endpoints: regional
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         run: terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: "eu-north-1"
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: "eu-north-1"
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/asbah_key
+          chmod 600 ~/.ssh/asbah_key
+
+      - name: Run Ansible Playbook
+        run: |    
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          # Ensure this matches your outputs.tf name
+          export SERVER_IP=$(terraform output -raw instance_public_ip)
+          ansible-playbook -i $SERVER_IP, setup_db.yml --private-key ~/.ssh/asbah_key -u ec2-user
