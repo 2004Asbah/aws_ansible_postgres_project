@@ -24,7 +24,7 @@ jobs:
           # Replace with your actual Role ARN from your terraform output
           role-to-assume: arn:aws:iam::981417395766:role/github-actions-oidc-role
           aws-region: eu-north-1
-          aws-sts-regional-endpoints: regional
+          
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
