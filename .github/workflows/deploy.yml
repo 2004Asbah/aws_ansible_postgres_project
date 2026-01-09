@@ -1,4 +1,4 @@
-name: "DevOps Pipeline: Terraform & Ansible"
+name: DevOps Pipeline (Access Keys)
 
 on:
   push:
@@ -8,27 +8,30 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
+      # ✅ Classic AWS auth (NO OIDC)
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         run: terraform init
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: "eu-north-1"
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: "eu-north-1"
 
+      # SSH key for Ansible
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
@@ -36,8 +39,9 @@ jobs:
           chmod 600 ~/.ssh/asbah_key
 
       - name: Run Ansible Playbook
-        run: |    
+        run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
-          # Ensure this matches your outputs.tf name
           export SERVER_IP=$(terraform output -raw instance_public_ip)
-          ansible-playbook -i $SERVER_IP, setup_db.yml --private-key ~/.ssh/asbah_key -u ec2-user
+          ansible-playbook -i $SERVER_IP, setup_db.yml \
+            --private-key ~/.ssh/asbah_key \
+            -u ec2-user
