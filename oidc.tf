@@ -22,7 +22,7 @@ resource "aws_iam_role" "github_oidc_role" {
         Condition = {
           StringLike = {
             # CRITICAL: Replace 'your-username/your-repo' with your actual GitHub path
-            "token.actions.githubusercontent.com:sub": "repo:2004Asbah/*:*"
+            "token.actions.githubusercontent.com:sub": "*"
           },
           StringEquals = {
             "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
