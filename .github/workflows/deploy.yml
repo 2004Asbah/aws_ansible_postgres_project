@@ -1,11 +1,10 @@
-name: "DevOps Pipeline: Terraform & Ansible"
+name: DevOps Pipeline
 
 on:
   push:
     branches:
       - main
 
-# 1. Added Permissions for OIDC
 permissions:
   id-token: write
   contents: read
@@ -13,45 +12,29 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Debug Token
         run: |
-          echo "Checking if GitHub can generate a token..."
-          # This command just checks if the internal OIDC URL is available
-          curl -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL"  
+          echo "OIDC URL: $ACTIONS_ID_TOKEN_REQUEST_URL"
+          curl -s -D - \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL" | head -n 20
 
-      # 2. Replaced Manual AWS Credential setup with OIDC
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          # Replace with your actual Role ARN from your terraform output
           role-to-assume: arn:aws:iam::981417395766:role/github-actions-oidc-role
           aws-region: eu-north-1
-          
+          aws-sts-regional-endpoints: regional
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # 3. Cleaned up Terraform steps (OIDC handles the env automatically)
       - name: Terraform Init
         run: terraform init
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
-
-      # 4. SSH Key remains the same (this is for server access, not AWS access)
-      - name: Setup SSH Key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/asbah_key
-          chmod 600 ~/.ssh/asbah_key
-
-      - name: Run Ansible Playbook
-        run: |    
-          export ANSIBLE_HOST_KEY_CHECKING=False
-          # Fetch the IP from your outputs.tf
-          export SERVER_IP=$(terraform output -raw instance_public_ip)
-          ansible-playbook -i $SERVER_IP, setup_db.yml --private-key ~/.ssh/asbah_key -u ec2-user
