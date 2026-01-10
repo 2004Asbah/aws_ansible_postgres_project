@@ -90,4 +90,5 @@ root_block_device {
 # 5. Output for Ansible
 output "server_public_ip" {
   value = aws_instance.asbah_db_server_v2.public_ip
+  description = "Public IP of the PostgreSQL server"
 }

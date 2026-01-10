@@ -8,36 +8,71 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # -------- Terraform Setup --------
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      # Cache Terraform providers/modules to speed up pipeline
+      - name: Cache Terraform
+        uses: actions/cache@v4
+        with:
+          path: |
+            .terraform
+            ~/.terraform.d/plugin-cache
+          key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-
+
+      # Configure AWS creds (required for S3 backend + AWS resources)
+      - name: Configure AWS Credentials (for Terraform + S3 Backend)
+        run: |
+          mkdir -p ~/.aws
+
+          cat <<EOF > ~/.aws/credentials
+          [default]
+          aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          EOF
+
+          cat <<EOF > ~/.aws/config
+          [default]
+          region = eu-north-1
+          EOF
 
       - name: Terraform Init
         run: terraform init
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: "eu-north-1"
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: "eu-north-1"
 
+      # -------- SSH Key Setup --------
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/asbah_key
           chmod 600 ~/.ssh/asbah_key
 
+      # Install Ansible on GitHub runner
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      # -------- Run Ansible Playbook --------
       - name: Run Ansible Playbook
-        run: |    
+        run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
-          # Ensure this matches your outputs.tf name
-          export SERVER_IP=$(terraform output -raw instance_public_ip)
-          ansible-playbook -i $SERVER_IP, setup_db.yml --private-key ~/.ssh/asbah_key -u ec2-user
+
+          # Terraform output MUST match your output block name in main.tf
+          SERVER_IP=$(terraform output -raw server_public_ip)
+
+          echo "Server IP from Terraform: $SERVER_IP"
+
+          ansible-playbook -i "$SERVER_IP," setup_db.yml --private-key ~/.ssh/asbah_key -u ec2-user
